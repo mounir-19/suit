@@ -1,0 +1,243 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Kadwa', serif;
+  overflow-x: hidden;
+}
+
+.header {
+  height: 10vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+}
+
+.logo {
+  position: relative;
+  height: 10vh;
+  margin-left: 1vw;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 5vw;
+  position: absolute;
+  margin-left: 8vw;
+}
+
+.nav a {
+  position: relative;
+  color: black;
+  text-decoration: none;
+}
+
+.nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background-color: black;
+  transition: width 0.2s ease;
+}
+
+.nav a:hover::after {
+  width: 100%;
+}
+
+.nav a:visited {
+  color: black;
+  text-decoration: none;
+}
+.name {
+  display: flex;
+  position: absolute;
+  font-size: 2vw;
+  font-weight: bold;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.user {
+  display: flex;
+  position: absolute;
+  right: 1vw;
+  justify-content: space-between;
+  gap: 5vw;
+}
+
+.user a {
+  position: relative;
+  color: black;
+  text-decoration: none;
+}
+
+.user a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background-color: black;
+  transition: width 0.2s ease;
+}
+
+.user a:hover::after {
+  width: 100%;
+}
+
+.user a:visited {
+  color: black;
+  text-decoration: none;
+}
+.signup {
+    display: flex;
+    justify-content: center;
+    background-color: #FAFAFA;
+    padding-bottom: 100px;
+
+}
+
+
+.p1{
+    font-size: 36px;
+    line-height: 4;
+    font-weight: bolder;
+    
+}
+.p2{
+    font-size: 14px;
+    color: gray;
+}
+form label{
+    line-height: 3;
+}
+form input{
+    height: 4vh;
+    border: none;
+    width: 30vw;
+    background-color: #FAFAFA;
+    border-bottom: 1px solid #aaa;
+}
+form button{
+    justify-content: center;
+    width: 30vw;
+    margin-top: 4vh;
+    height: 5vh;
+    background-color:black ;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.login{
+    justify-content: center;
+    display: flex;
+    text-decoration: none;
+    width: 30vw;
+}
+form input:focus{
+    outline: none;
+}
+form button:hover{
+    opacity: 0.8;
+    transition: 0.5s;
+}
+form button:not(:hover){
+    transition: 0.5s;
+}
+.login:hover{
+    text-decoration: underline;
+}
+.login:visited{
+    color: black;
+}
+.img {
+    display: flex;
+    margin-left: 300px;
+    align-items: center;
+    
+}
+
+.img img{
+    width: 50%;
+    height: 90%;
+    object-fit: contain;
+    
+}
+.wilaya{
+    border: none;
+    height: 4vh;
+    width: 30vw;
+    background-color: #FAFAFA;
+    border-bottom: 1px solid #aaa;
+    color: gray;
+}
+.wilaya:focus{
+    outline: none;
+}
+
+
+
+
+
+
+footer{
+  height: 600px;
+  margin-top: 100px;
+  display: flex;
+  justify-content: space-around;
+
+}
+.service-client{
+  margin-top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+footer a{
+  color: black;
+  text-decoration: none;
+}
+footer a:hover{
+  text-decoration: underline;
+}
+footer a:visited{
+  color: black;
+}
+.service{
+  margin-top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.Contact3{
+  position: absolute;
+  display: flex;
+  justify-content: space-around;
+  margin-top: 500px;
+  gap: 300px;
+}
+footer img{
+  height: 80%;
+  width: 30%;
+}
+.copyright{
+  position: absolute;
+  margin-top: 550px;
+}
+.copyright hr{
+  width: 200%;
+  margin-left: -150px;
+}
