@@ -9,11 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isAdmin()) {
             header('Location: admin.php');
         } else {
-            header('Location: homepage.html');
+            header('Location: homepage.php');
         }
         exit;
     } else {
-        $error = "Invalid email or password";
+        $error = "Email ou mot de passe incorrect";
     }
 }
 ?>
@@ -40,18 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Navigation Links -->
         <div class="nav" id="nav">
-            <a href="#main">Acceuil</a>
-            <a href="#main2">Catalogue</a>
-            <a href="#contact">Contact</a>
+            <a href="homepage.php">Acceuil</a>
+            <a href="store.php">Catalogue</a>
+            <a href="homepage.php#contact">Contact</a>
         </div>
         
-        <p class="name">MSH-ISTANBOUL</p>
+        <p class="name">MSH-ISTANBUL</p>
 
         <!-- User Actions -->
         <div class="user" id="user">
             <a href="#">Langue</a>
-            <a href="#">Cart</a>
-            <a href="#">Account</a>
+            <a href="cart.php">Cart</a>
+            <a href="profile.php">Account</a>
         </div>
     </div>
     <hr>
@@ -76,24 +76,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <footer>
         <div class="service-client">
             <p>Service client</p>
-            <a href="#">Compte</a>
+            <a href="profile.php">Compte</a>
             <a href="#">Livraison & Retour</a>
-            <a href="#">Contactez-Nous</a>
+            <a href="homepage.php#contact">Contactez-Nous</a>
         </div>
         <div class="service">
             <p>Services</p>
-            <a href="#">page1</a>
-            <a href="#">page2</a>
-            <a href="#">page3</a>
+            <a href="homepage.php">Accueil</a>
+            <a href="store.php">Boutique</a>
+            <a href="cart.php">Panier</a>
         </div>
         <div class="Contact3">
-            <a href="#">location</a>
-            <a href="#">phone</a>
-            <a href="#">email</a>
-            <a href="#">facebook</a>
+            <a href="#">Alger, Algérie</a>
+            <a href="tel:+213123456789">+213 123 456 789</a>
+            <a href="mailto:contact@msh-istanbul.com">contact@msh-istanbul.com</a>
+            <a href="#">Facebook</a>
         </div>
-        <img src="logo.png" alt="">
-        <div class="copyright">&copy; 2025 MSH Istanboul. Tous droits réservés.</div>
+        <img src="logo.png" alt="Logo of MSH Istanbul">
+        <div class="copyright">&copy; 2025 MSH Istanbul. Tous droits réservés.</div>
     </footer>
 </body>
 </html>

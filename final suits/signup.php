@@ -2,16 +2,29 @@
 require_once 'auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
+    $first_name = trim($_POST['prenom'] ?? '');
+    $last_name = trim($_POST['nom'] ?? '');
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $firstName = $_POST['nom'] ?? '';
-    $lastName = $_POST['prenom'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
     
-    if (register($email, $password, $firstName, $lastName)) {
-        header('Location: login.php');
-        exit;
-    } else {
-        $error = "Registration failed. Please try again.";
+    $errors = [];
+    
+    // Validation
+    if (empty($first_name)) $errors[] = "Le prénom est requis";
+    if (empty($last_name)) $errors[] = "Le nom est requis";
+    if (empty($email)) $errors[] = "L'email est requis";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "Format d'email invalide";
+    if (empty($password)) $errors[] = "Le mot de passe est requis";
+    if (strlen($password) < 6) $errors[] = "Le mot de passe doit contenir au moins 6 caractères";
+    if ($password !== $confirm_password) $errors[] = "Les mots de passe ne correspondent pas";
+    
+    if (empty($errors)) {
+        if (register($first_name, $last_name, $email, $password)) {
+            $success = "Compte créé avec succès! Vous pouvez maintenant vous connecter.";
+        } else {
+            $errors[] = "Cet email est déjà utilisé ou une erreur s'est produite";
+        }
     }
 }
 ?>
@@ -39,18 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Navigation Links -->
         <div class="nav" id="nav">
-            <a href="#main">Acceuil</a>
-            <a href="#main2">Catalogue</a>
-            <a href="#contact">Contact</a>
+            <a href="homepage.php">Acceuil</a>
+            <a href="store.php">Catalogue</a>
+            <a href="homepage.php#contact">Contact</a>
         </div>
         
-        <p class="name">MSH-ISTANBOUL</p>
+        <p class="name">MSH-ISTANBUL</p>
 
         <!-- User Actions -->
         <div class="user" id="user">
             <a href="#">Langue</a>
-            <a href="#">Cart</a>
-            <a href="#">Account</a>
+            <a href="cart.php">Cart</a>
+            <a href="login.php">Account</a>
         </div>
     </div>
     <hr>
@@ -58,30 +71,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="form">
         <p class="p1">Créer un compte</p>
         <p class="p2">Créez un compte pour consulter l'historique <br>de vos commandes et mettre à jour vos coordonnées.</p>
-        <form action="" method="post" id="signupForm" onsubmit="return validateSignupForm(event)">
-            <?php if (isset($error)): ?>
-                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+        <?php if (isset($success)): ?>
+            <div class="success-message" style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
+                <?php echo htmlspecialchars($success); ?>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="login.php" style="color: #D4AE6A; text-decoration: none;">Se connecter maintenant</a>
+            </div>
+        <?php else: ?>
+        <form action="" method="post">
+            <?php if (!empty($errors)): ?>
+                <div class="error-message" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
+                    <?php foreach ($errors as $error): ?>
+                        <div><?php echo htmlspecialchars($error); ?></div>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
             <label for="nom">Nom</label><br>
-            <input type="text" name="nom" id="nom" placeholder="votre nom" required minlength="2"><br>
-            <div class="error-message" id="nomError"></div>
+            <input type="text" name="nom" id="nom" placeholder="votre nom" value="<?php echo htmlspecialchars($last_name ?? ''); ?>" required><br>
 
-            <label for="prenom">Prenom</label><br>
-            <input type="text" name="prenom" id="prenom" placeholder="votre prenom" required minlength="2"><br>
-            <div class="error-message" id="prenomError"></div>
+            <label for="prenom">Prénom</label><br>
+            <input type="text" name="prenom" id="prenom" placeholder="votre prénom" value="<?php echo htmlspecialchars($first_name ?? ''); ?>" required><br>
 
             <label for="email">Email</label><br>
-            <input type="email" name="email" id="email" placeholder="votre@email.com" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"><br>
-            <div class="error-message" id="emailError"></div>
+            <input type="email" name="email" id="email" placeholder="votre@email.com" value="<?php echo htmlspecialchars($email ?? ''); ?>" required><br>
 
             <label for="password">Mot de passe</label><br>
-            <input type="password" name="password" id="password" placeholder="Créer un mot de passe" required minlength="8"><br>
-            <div class="error-message" id="passwordError"></div>
+            <input type="password" name="password" id="password" placeholder="Au moins 6 caractères" required><br>
 
             <label for="confirm_password">Confirmer le mot de passe</label><br>
-            <input type="password" id="confirm_password" placeholder="Confirmer votre mot de passe" required><br>
-            <div class="error-message" id="confirmPasswordError"></div>
+            <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirmer votre mot de passe" required><br>
 
+            <button type="submit" style="width: 100%; padding: 12px; background: #D4AE6A; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 15px;">Créer le compte</button><br>
+        </form>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="login.php" style="color: #D4AE6A; text-decoration: none;">Déjà un compte? Se connecter</a>
+        </div>
+        <?php endif; ?>
+        </div>
+    </div>
+    
+    <hr>
+    <footer>
+        <div class="service-client">
+            <p>Service client</p>
+            <a href="profile.php">Compte</a>
+            <a href="#">Livraison & Retour</a>
+            <a href="homepage.php#contact">Contactez-Nous</a>
+        </div>
+        <div class="service">
+            <p>Services</p>
+            <a href="homepage.php">Accueil</a>
+            <a href="store.php">Boutique</a>
+            <a href="cart.php">Panier</a>
+        </div>
+        <div class="Contact3">
+            <a href="#">Alger, Algérie</a>
+            <a href="tel:+213123456789">+213 123 456 789</a>
+            <a href="mailto:contact@msh-istanbul.com">contact@msh-istanbul.com</a>
+            <a href="#">Facebook</a>
+        </div>
+        <img src="logo.png" alt="Logo of MSH Istanbul">
+        <div class="copyright">&copy; 2025 MSH Istanbul. Tous droits réservés.</div>
+    </footer>
+</body>
+</html>
+
+<!-- Remove the old wilaya dropdown and everything after -->
+<!--
             <label for="wilaya">Wilaya</label><br>
             <select name="wilaya" id="wilaya" class="wilaya" required>
     <option value="">Sélectionnez votre wilaya</option>

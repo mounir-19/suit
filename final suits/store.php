@@ -57,24 +57,99 @@ $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <title>Document</title>
+    <title>Store - MSH-ISTANBUL</title>
+    <style>
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .product-card h3 {
+            margin: 10px 0;
+            color: #333;
+        }
+        .product-card .price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #D4AE6A;
+            margin: 10px 0;
+        }
+        .product-card .details {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+        .add-to-cart {
+            background: #D4AE6A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        .add-to-cart:hover {
+            background: #B8954A;
+        }
+        .cart-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
+    <div class="cart-notification" id="cartNotification">
+        Product added to cart!
+    </div>
+
     <div class="header">
         <img src="logo.png" alt="" class="logo" />
         <div id="menuToggle" class="menu-toggle">
             <i class="fas fa-bars"></i>
         </div>
         <div class="nav" id="nav">
-            <a href="#main">Acceuil</a>
-            <a href="#main2">Catalogue</a>
-            <a href="#contact">Contact</a>
+            <a href="homepage.php">Acceuil</a>
+            <a href="store.php">Catalogue</a>
+            <a href="homepage.php#contact">Contact</a>
         </div>
         <p class="name">MSH-ISTANBUL</p>
         <div class="user" id="user">
             <a href="#">Langue</a>
-            <a href="#">Cart</a>
-            <a href="#">Account</a>
+            <a href="cart.php">Cart (<span id="cart-count">0</span>)</a>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="profile.php">Account</a>
+                <a href="?logout=1">Logout</a>
+            <?php else: ?>
+                <a href="login.php">Login</a>
+            <?php endif; ?>
         </div>
     </div>
     <hr />
@@ -92,18 +167,8 @@ $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
     <div class="main" id="main">
         <div class="title">
-            <p class="welcome">Bienvenue chez Msh Istanbul</p>
-            <p class="quote">L’élégance, à l’algérienne.</p>
-        </div>
-        <img src="img1.jpg" alt="" class="img1" />
-        <div class="deal">
-            <p class="p1">-20% sur la collection Mariage</p>
-            <p class="p2">Pour être le plus élégant sans vous ruiner</p>
-        </div>
-        <a href="#" class="boutique">voir la boutique</a>
-        <div class="xscroll">
-            <button class="move1">&lt;</button>
-            <button class="move2">&gt;</button>
+            <p class="welcome">Notre Collection</p>
+            <p class="quote">Découvrez nos produits de qualité.</p>
         </div>
     </div>
 
@@ -120,90 +185,83 @@ $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
             <div class="accordion-header">Catégorie</div>
             <div class="accordion-content">
-                <label><input type="checkbox" value="costume"> Costumes</label>
-                <label><input type="checkbox" value="veste"> Vestes</label>
-                <label><input type="checkbox" value="pantalon"> Pantalons</label>
-                <label><input type="checkbox" value="accessoire"> Accessoires</label>
+                <label><input type="checkbox" value="suits"> Costumes</label>
+                <label><input type="checkbox" value="shirts"> Chemises</label>
+                <label><input type="checkbox" value="pants"> Pantalons</label>
+                <label><input type="checkbox" value="accessories"> Accessoires</label>
             </div>
 
             <div class="accordion-header">Couleur</div>
             <div class="accordion-content">
-                <label><input type="checkbox" value="noir"> Noir</label>
-                <label><input type="checkbox" value="gris"> Gris</label>
-                <label><input type="checkbox" value="bleu"> Bleu</label>
-                <label><input type="checkbox" value="marron"> Marron</label>
+                <label><input type="checkbox" value="Noir"> Noir</label>
+                <label><input type="checkbox" value="Gris"> Gris</label>
+                <label><input type="checkbox" value="Bleu Marine"> Bleu Marine</label>
+                <label><input type="checkbox" value="Blanc"> Blanc</label>
+                <label><input type="checkbox" value="Rouge"> Rouge</label>
             </div>
 
             <div class="accordion-header">Taille</div>
             <div class="accordion-content">
-                <label><input type="checkbox" value="xs"> XS</label>
-                <label><input type="checkbox" value="s"> S</label>
-                <label><input type="checkbox" value="m"> M</label>
-                <label><input type="checkbox" value="l"> L</label>
-                <label><input type="checkbox" value="xl"> XL</label>
-                <label><input type="checkbox" value="xxl"> XXL</label>
+                <label><input type="checkbox" value="XS"> XS</label>
+                <label><input type="checkbox" value="S"> S</label>
+                <label><input type="checkbox" value="M"> M</label>
+                <label><input type="checkbox" value="L"> L</label>
+                <label><input type="checkbox" value="XL"> XL</label>
+                <label><input type="checkbox" value="XXL"> XXL</label>
             </div>
         </div>
         <button id="applyBtn" class="apply-btn">Filtrer</button>
         <button id="resetBtn" class="reset-btn">Réinitialiser</button>
     </div>
 
-    
-
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Reset filters
-        document.getElementById("resetBtn").addEventListener("click", () => {
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            // Reset price sort to default (croissant)
-            document.querySelector('input[name="price-sort"][value="croissant"]').checked = true;
-        });
-
-        // Apply filters
-        document.getElementById("applyBtn").addEventListener("click", () => {
-            const selectedFilters = {
-                priceSort: document.querySelector('input[name="price-sort"]:checked').value,
-                categories: Array.from(document.querySelectorAll('input[type="checkbox"][value^="costume"],input[type="checkbox"][value^="veste"],input[type="checkbox"][value^="pantalon"],input[type="checkbox"][value^="accessoire"]'))
-                    .filter(cb => cb.checked)
-                    .map(cb => cb.value),
-                colors: Array.from(document.querySelectorAll('input[type="checkbox"][value^="noir"],input[type="checkbox"][value^="gris"],input[type="checkbox"][value^="bleu"],input[type="checkbox"][value^="marron"]'))
-                    .filter(cb => cb.checked)
-                    .map(cb => cb.value),
-                sizes: Array.from(document.querySelectorAll('input[type="checkbox"][value^="xs"],input[type="checkbox"][value^="s"],input[type="checkbox"][value^="m"],input[type="checkbox"][value^="l"],input[type="checkbox"][value^="xl"],input[type="checkbox"][value^="xxl"]'))
-                    .filter(cb => cb.checked)
-                    .map(cb => cb.value)
-            };
-
-            console.log('Applied filters:', selectedFilters);
-            // Here you would typically make an API call or filter the products based on the selected filters
-            // For now, we'll just close the sidebar
-            document.getElementById("sidebar").classList.remove("show");
-            document.getElementById("overlay").style.display = "none";
-        });
-    });
-    </script>
+    <div class="products-grid">
+        <?php if (empty($products)): ?>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                <h3>Aucun produit trouvé</h3>
+                <p>Essayez de modifier vos filtres ou <a href="store.php">voir tous les produits</a></p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($products as $product): ?>
+            <div class="product-card">
+                <img src="<?php echo htmlspecialchars($product['image_url'] ?: 'placeholder.jpg'); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                <h3><?php echo htmlspecialchars($product['name']); ?></h3>
+                <div class="details">
+                    <?php if ($product['color']): ?>
+                        <span>Couleur: <?php echo htmlspecialchars($product['color']); ?></span><br>
+                    <?php endif; ?>
+                    <?php if ($product['size']): ?>
+                        <span>Taille: <?php echo htmlspecialchars($product['size']); ?></span><br>
+                    <?php endif; ?>
+                    <span>Stock: <?php echo $product['stock']; ?></span>
+                </div>
+                <p class="price"><?php echo number_format($product['price'], 2); ?> DA</p>
+                <p style="font-size: 14px; color: #666; margin: 10px 0;"><?php echo htmlspecialchars(substr($product['description'], 0, 100)); ?>...</p>
+                <button class="add-to-cart" data-product-id="<?php echo $product['id']; ?>" <?php echo $product['stock'] <= 0 ? 'disabled' : ''; ?>>
+                    <?php echo $product['stock'] <= 0 ? 'Rupture de stock' : 'Ajouter au panier'; ?>
+                </button>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 
     <footer>
         <div class="service-client">
             <p>Service client</p>
-            <a href="#">Compte</a>
+            <a href="profile.php">Compte</a>
             <a href="#">Livraison &amp; Retour</a>
-            <a href="#">Contactez-Nous</a>
+            <a href="homepage.php#contact">Contactez-Nous</a>
         </div>
         <div class="service">
             <p>Services</p>
-            <a href="#">page1</a>
-            <a href="#">page2</a>
-            <a href="#">page3</a>
+            <a href="homepage.php">Accueil</a>
+            <a href="store.php">Boutique</a>
+            <a href="cart.php">Panier</a>
         </div>
         <div class="Contact3">
-            <a href="#">location</a>
-            <a href="#">phone</a>
-            <a href="#">email</a>
-            <a href="#">facebook</a>
+            <a href="#">Alger, Algérie</a>
+            <a href="tel:+213123456789">+213 123 456 789</a>
+            <a href="mailto:contact@msh-istanbul.com">contact@msh-istanbul.com</a>
+            <a href="#">Facebook</a>
         </div>
         <img src="logo.png" alt="Logo of MSH Istanbul" />
         <div class="copyright">
@@ -211,17 +269,106 @@ $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             &copy; 2025 MSH Istanbul. Tous droits réservés.
         </div>
     </footer>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Update cart count on page load
+        updateCartCount();
+
+        // Filter functionality
+        const filterBtn = document.getElementById("filterBtn");
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("overlay");
+        const applyBtn = document.getElementById("applyBtn");
+        const resetBtn = document.getElementById("resetBtn");
+
+        filterBtn.addEventListener("click", () => {
+            sidebar.classList.add("show");
+            overlay.style.display = "block";
+        });
+
+        overlay.addEventListener("click", () => {
+            sidebar.classList.remove("show");
+            overlay.style.display = "none";
+        });
+
+        // Reset filters
+        resetBtn.addEventListener("click", () => {
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelector('input[name="price-sort"][value="croissant"]').checked = true;
+        });
+
+        // Apply filters
+        applyBtn.addEventListener("click", () => {
+            const priceSort = document.querySelector('input[name="price-sort"]:checked').value;
+            const categories = Array.from(document.querySelectorAll('input[type="checkbox"][value="suits"], input[type="checkbox"][value="shirts"], input[type="checkbox"][value="pants"], input[type="checkbox"][value="accessories"]'))
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            const colors = Array.from(document.querySelectorAll('input[type="checkbox"][value="Noir"], input[type="checkbox"][value="Gris"], input[type="checkbox"][value="Bleu Marine"], input[type="checkbox"][value="Blanc"], input[type="checkbox"][value="Rouge"]'))
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            const sizes = Array.from(document.querySelectorAll('input[type="checkbox"][value="XS"], input[type="checkbox"][value="S"], input[type="checkbox"][value="M"], input[type="checkbox"][value="L"], input[type="checkbox"][value="XL"], input[type="checkbox"][value="XXL"]'))
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            // Build URL with filters
+            const params = new URLSearchParams();
+            params.set('price_sort', priceSort);
+            categories.forEach(cat => params.append('categories[]', cat));
+            colors.forEach(color => params.append('colors[]', color));
+            sizes.forEach(size => params.append('sizes[]', size));
+
+            window.location.href = 'store.php?' + params.toString();
+        });
+
+        // Add to cart functionality
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                
+                fetch('cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=add&product_id=${productId}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showCartNotification();
+                        updateCartCount();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+
+        function showCartNotification() {
+            const notification = document.getElementById('cartNotification');
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function updateCartCount() {
+            fetch('cart.php?get_count=1')
+                .then(response => response.json())
+                .then(data => {
+                    const count = Object.values(data.cart || {}).reduce((sum, qty) => sum + qty, 0);
+                    document.getElementById('cart-count').textContent = count;
+                })
+                .catch(error => {
+                    console.error('Error updating cart count:', error);
+                });
+        }
+    });
+    </script>
 </body>
 </html>
-
-    <div class="products-grid">
-        <?php foreach ($products as $product): ?>
-        <div class="product-card">
-            <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
-            <h3><?php echo htmlspecialchars($product['name']); ?></h3>
-            <p class="price"><?php echo number_format($product['price'], 2); ?> DA</p>
-            <button class="add-to-cart" data-product-id="<?php echo $product['id']; ?>">Add to Cart</button>
-        </div>
-        <?php endforeach; ?>
-    </div>
 
