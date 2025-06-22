@@ -36,94 +36,21 @@ if (!empty($sizes)) {
 
 $query .= " ORDER BY price " . ($priceSort === 'croissant' ? 'ASC' : 'DESC');
 
-$stmt = $conn->prepare($query);
+$stmt = $mysqli->prepare($query);
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
 }
 $stmt->execute();
 $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Store - Suit Collection</title>
     <link rel="stylesheet" href="store.css" />
-    <script src="homepage.js" defer></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kadwa:wght@400;700&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&amp;display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <title>Store - MSH-ISTANBUL</title>
-    <style>
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        .product-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-        }
-        .product-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .product-card h3 {
-            margin: 10px 0;
-            color: #333;
-        }
-        .product-card .price {
-            font-size: 18px;
-            font-weight: bold;
-            color: #D4AE6A;
-            margin: 10px 0;
-        }
-        .product-card .details {
-            font-size: 14px;
-            color: #666;
-            margin: 5px 0;
-        }
-        .add-to-cart {
-            background: #D4AE6A;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s ease;
-        }
-        .add-to-cart:hover {
-            background: #B8954A;
-        }
-        .cart-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 15px;
-            border-radius: 4px;
-            display: none;
-            z-index: 1000;
-        }
-    </style>
 </head>
 <body>
     <div class="cart-notification" id="cartNotification">

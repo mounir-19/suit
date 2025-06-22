@@ -1,234 +1,259 @@
 <?php
-require_once './config.php';
+// Ensure user is logged in and is an admin
+if (!isLoggedIn() || !isAdmin()) {
+    header('Location: ../login.php');
+    exit();
+}
 
-// Get statistics
-$stats = [];
+require_once '../config.php';
+require_once '../auth.php';
+require_once 'utils.php';
 
-// Total products
-$result = $conn->query("SELECT COUNT(*) as total FROM products");
-$stats['total_products'] = $result->fetch_assoc()['total'];
+function getDashboardStats() {
+    global $mysqli;
+    
+    $stats = [];
+    
+    try {
+        // Total products
+        $result = $mysqli->query('SELECT COUNT(*) as count FROM products');
+        $stats['total_products'] = $result->fetch_assoc()['count'] ?? 0;
+        
+        // Pending orders
+        $stmt = $mysqli->prepare('SELECT COUNT(*) as count FROM orders WHERE status = ?');
+        $status = 'pending';
+        $stmt->bind_param('s', $status);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stats['pending_orders'] = $result->fetch_assoc()['count'] ?? 0;
+        $stmt->close();
+        
+        // Active offers
+        $result = $mysqli->query('SELECT COUNT(*) as count FROM offers WHERE end_date >= CURRENT_DATE');
+        $stats['active_offers'] = $result ? $result->fetch_assoc()['count'] ?? 0 : 0;
+        
+        // Monthly sales
+        $stmt = $mysqli->prepare(
+            'SELECT COALESCE(SUM(total_amount), 0) as sales 
+            FROM orders 
+            WHERE MONTH(order_date) = MONTH(CURRENT_DATE) 
+            AND YEAR(order_date) = YEAR(CURRENT_DATE)
+            AND status != "cancelled"'
+        );
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stats['monthly_sales'] = $result->fetch_assoc()['sales'] ?? 0;
+        $stmt->close();
+        
+        // Recent orders
+        $result = $mysqli->query(
+            'SELECT o.id, o.total_amount, o.status, o.order_date, u.first_name, u.last_name 
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            ORDER BY o.order_date DESC 
+            LIMIT 5'
+        );
+        $stats['recent_orders'] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        
+        // Top selling products
+        $result = $mysqli->query(
+            'SELECT p.name, SUM(oi.quantity) as total_sold 
+            FROM products p 
+            JOIN order_items oi ON p.id = oi.product_id 
+            JOIN orders o ON oi.order_id = o.id 
+            WHERE o.status != "cancelled" 
+            GROUP BY p.id, p.name 
+            ORDER BY total_sold DESC 
+            LIMIT 5'
+        );
+        $stats['top_products'] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        
+    } catch (Exception $e) {
+        error_log("Dashboard stats error: " . $e->getMessage());
+        // Return default values on error
+        $stats = [
+            'total_products' => 0,
+            'pending_orders' => 0,
+            'active_offers' => 0,
+            'monthly_sales' => 0,
+            'recent_orders' => [],
+            'top_products' => []
+        ];
+    }
+    
+    return $stats;
+}
 
-// Total orders
-$result = $conn->query("SELECT COUNT(*) as total FROM orders");
-$stats['total_orders'] = $result->fetch_assoc()['total'];
 
-// Pending orders
-$result = $conn->query("SELECT COUNT(*) as total FROM orders WHERE status = 'pending'");
-$stats['pending_orders'] = $result->fetch_assoc()['total'];
-
-// Total customers
-$result = $conn->query("SELECT COUNT(*) as total FROM users WHERE is_admin = 0");
-$stats['total_customers'] = $result->fetch_assoc()['total'];
-
-// Monthly revenue
-$result = $conn->query("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE MONTH(created_at) = MONTH(CURRENT_DATE) AND YEAR(created_at) = YEAR(CURRENT_DATE) AND status != 'cancelled'");
-$stats['monthly_revenue'] = $result->fetch_assoc()['total'];
-
-// Active offers
-$result = $conn->query("SELECT COUNT(*) as total FROM offers WHERE start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE");
-$stats['active_offers'] = $result->fetch_assoc()['total'];
-
-// Recent orders
-$recent_orders = $conn->query("
-    SELECT o.*, u.first_name, u.last_name, u.email 
-    FROM orders o 
-    JOIN users u ON o.user_id = u.id 
-    ORDER BY o.created_at DESC 
-    LIMIT 10
-")->fetch_all(MYSQLI_ASSOC);
-
-// Low stock products
-$low_stock = $conn->query("
-    SELECT * FROM products 
-    WHERE stock <= 5 
-    ORDER BY stock ASC 
-    LIMIT 10
-")->fetch_all(MYSQLI_ASSOC);
-
-// Top selling products
-$top_products = $conn->query("
-    SELECT p.name, p.price, SUM(oi.quantity) as total_sold
-    FROM products p
-    JOIN order_items oi ON p.id = oi.product_id
-    JOIN orders o ON oi.order_id = o.id
-    WHERE o.status != 'cancelled'
-    GROUP BY p.id
-    ORDER BY total_sold DESC
-    LIMIT 5
-")->fetch_all(MYSQLI_ASSOC);
+// Dashboard content is included in admin.php
+if (!isset($stats)) {
+    $stats = getDashboardStats();
+}
 ?>
 
-<div class="dashboard">
-    <!-- Statistics Cards -->
+<div class="admin-section">
+    <h1 class="section-title">Dashboard Overview</h1>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="?section=articles" class="quick-action">
+            <div class="quick-action-icon"><i class="fas fa-plus"></i></div>
+            <div class="quick-action-title">Add Product</div>
+            <div class="quick-action-desc">Create new product</div>
+        </a>
+        <a href="?section=orders" class="quick-action">
+            <div class="quick-action-icon"><i class="fas fa-eye"></i></div>
+            <div class="quick-action-title">View Orders</div>
+            <div class="quick-action-desc">Manage orders</div>
+        </a>
+        <a href="?section=offers" class="quick-action">
+            <div class="quick-action-icon"><i class="fas fa-percentage"></i></div>
+            <div class="quick-action-title">Create Offer</div>
+            <div class="quick-action-desc">Add new promotion</div>
+        </a>
+        <a href="?section=customers" class="quick-action">
+            <div class="quick-action-icon"><i class="fas fa-users"></i></div>
+            <div class="quick-action-title">Customers</div>
+            <div class="quick-action-desc">View customer list</div>
+        </a>
+    </div>
+    
+    <!-- Stats Grid -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon products">
-                <i class="fas fa-shirt"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['total_products']); ?></h3>
-                <p>Produits Total</p>
+            <h3>Total Products</h3>
+            <div class="stat-number"><?php echo number_format($stats['total_products']); ?></div>
+            <div class="stat-change positive">
+                <i class="fas fa-arrow-up"></i> +12% from last month
             </div>
         </div>
         
         <div class="stat-card">
-            <div class="stat-icon orders">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['total_orders']); ?></h3>
-                <p>Commandes Total</p>
+            <h3>Pending Orders</h3>
+            <div class="stat-number"><?php echo number_format($stats['pending_orders']); ?></div>
+            <div class="stat-change negative">
+                <i class="fas fa-arrow-down"></i> -5% from last week
             </div>
         </div>
         
         <div class="stat-card">
-            <div class="stat-icon pending">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['pending_orders']); ?></h3>
-                <p>En Attente</p>
+            <h3>Active Offers</h3>
+            <div class="stat-number"><?php echo number_format($stats['active_offers']); ?></div>
+            <div class="stat-change positive">
+                <i class="fas fa-arrow-up"></i> +2 new offers
             </div>
         </div>
         
         <div class="stat-card">
-            <div class="stat-icon customers">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['total_customers']); ?></h3>
-                <p>Clients</p>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon revenue">
-                <i class="fas fa-money-bill-wave"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['monthly_revenue'], 2); ?> DA</h3>
-                <p>Revenus ce Mois</p>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon offers">
-                <i class="fas fa-tags"></i>
-            </div>
-            <div class="stat-content">
-                <h3><?php echo number_format($stats['active_offers']); ?></h3>
-                <p>Offres Actives</p>
+            <h3>Monthly Sales</h3>
+            <div class="stat-number">$<?php echo number_format($stats['monthly_sales'], 2); ?></div>
+            <div class="stat-change positive">
+                <i class="fas fa-arrow-up"></i> +18% from last month
             </div>
         </div>
     </div>
     
-    <!-- Dashboard Content Grid -->
+    <!-- Dashboard Grid -->
     <div class="dashboard-grid">
-        <!-- Recent Orders -->
         <div class="dashboard-card">
-            <div class="card-header">
-                <h3>Commandes Récentes</h3>
-                <a href="?section=orders" class="view-all">Voir tout</a>
-            </div>
-            <div class="card-content">
-                <?php if (empty($recent_orders)): ?>
-                    <p class="no-data">Aucune commande trouvée</p>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>N° Commande</th>
-                                    <th>Client</th>
-                                    <th>Total</th>
-                                    <th>Statut</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_orders as $order): ?>
-                                <tr>
-                                    <td>#<?php echo str_pad($order['id'], 4, '0', STR_PAD_LEFT); ?></td>
-                                    <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
-                                    <td><?php echo number_format($order['total_amount'], 2); ?> DA</td>
-                                    <td>
-                                        <span class="status status-<?php echo $order['status']; ?>">
-                                            <?php 
-                                            $status_labels = [
-                                                'pending' => 'En Attente',
-                                                'confirmed' => 'Confirmée',
-                                                'processing' => 'En Cours',
-                                                'shipped' => 'Expédiée',
-                                                'delivered' => 'Livrée',
-                                                'cancelled' => 'Annulée'
-                                            ];
-                                            echo $status_labels[$order['status']] ?? $order['status'];
-                                            ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
+            <h3>Recent Orders</h3>
+            <?php if (empty($stats['recent_orders'])): ?>
+                <p class="text-muted">No recent orders found.</p>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($stats['recent_orders'] as $order): ?>
+                            <tr>
+                                <td><strong>#<?php echo $order['id']; ?></strong></td>
+                                <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
+                                <td><strong>$<?php echo number_format($order['total_amount'], 2); ?></strong></td>
+                                <td><span class="status status-<?php echo $order['status']; ?>"><?php echo ucfirst($order['status']); ?></span></td>
+                                <td><?php echo date('M j, Y', strtotime($order['order_date'])); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
         
-        <!-- Low Stock Alert -->
         <div class="dashboard-card">
-            <div class="card-header">
-                <h3>Stock Faible</h3>
-                <a href="?section=products" class="view-all">Gérer</a>
-            </div>
-            <div class="card-content">
-                <?php if (empty($low_stock)): ?>
-                    <p class="no-data">Tous les produits ont un stock suffisant</p>
-                <?php else: ?>
-                    <div class="stock-alerts">
-                        <?php foreach ($low_stock as $product): ?>
-                        <div class="stock-item <?php echo $product['stock'] == 0 ? 'out-of-stock' : 'low-stock'; ?>">
-                            <div class="product-info">
-                                <h4><?php echo htmlspecialchars($product['name']); ?></h4>
-                                <p><?php echo htmlspecialchars($product['category']); ?></p>
-                            </div>
-                            <div class="stock-count">
-                                <span class="stock-number"><?php echo $product['stock']; ?></span>
-                                <span class="stock-label">en stock</span>
-                            </div>
+            <h3>Top Selling Products</h3>
+            <?php if (empty($stats['top_products'])): ?>
+                <p class="text-muted">No sales data available.</p>
+            <?php else: ?>
+                <div class="top-products-list">
+                    <?php foreach ($stats['top_products'] as $index => $product): ?>
+                    <div class="top-product-item">
+                        <div class="product-rank"><?php echo $index + 1; ?></div>
+                        <div class="product-info">
+                            <div class="product-name"><?php echo htmlspecialchars($product['name']); ?></div>
+                            <div class="product-sales"><?php echo $product['total_sold']; ?> sold</div>
                         </div>
-                        <?php endforeach; ?>
                     </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Top Products -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h3>Produits Populaires</h3>
-            </div>
-            <div class="card-content">
-                <?php if (empty($top_products)): ?>
-                    <p class="no-data">Aucune donnée de vente disponible</p>
-                <?php else: ?>
-                    <div class="top-products">
-                        <?php foreach ($top_products as $index => $product): ?>
-                        <div class="product-rank">
-                            <div class="rank-number"><?php echo $index + 1; ?></div>
-                            <div class="product-details">
-                                <h4><?php echo htmlspecialchars($product['name']); ?></h4>
-                                <p><?php echo number_format($product['price'], 2); ?> DA</p>
-                            </div>
-                            <div class="sales-count">
-                                <span><?php echo $product['total_sold']; ?> vendus</span>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+
+<style>
+.top-products-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.top-product-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+}
+
+.product-rank {
+    width: 2rem;
+    height: 2rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-name {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+}
+
+.product-sales {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.text-muted {
+    color: var(--text-light);
+    font-style: italic;
+}
+</style>

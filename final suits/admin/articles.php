@@ -1,195 +1,226 @@
 <?php
-require_once './config.php';
+// Check if session is already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Handle form submissions
+require_once '../config.php';
+require_once '../auth.php';
+require_once 'utils.php';
+
+// Ensure user is logged in and is an admin
+if (!isLoggedIn() || !isAdmin()) {
+    header('Location: ../login.php');
+    exit();
+}
+
+// Handle article actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        switch($_POST['action']) {
-            case 'add':
-                $name = $_POST['name'] ?? '';
-                $price = $_POST['price'] ?? 0;
-                $stock = $_POST['stock'] ?? 0;
-                $category = $_POST['category'] ?? '';
-                $description = $_POST['description'] ?? '';
-                $color = $_POST['color'] ?? '';
-                $size = $_POST['size'] ?? '';
+    $action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
+    
+    if ($action === 'add') {
+        $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
+        $price = filter_input(INPUT_POST, 'price', FILTER_VALIDATE_FLOAT);
+        $stock = filter_input(INPUT_POST, 'stock', FILTER_VALIDATE_INT);
+        $category = filter_input(INPUT_POST, 'category', FILTER_SANITIZE_STRING);
+        $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
+        $color = filter_input(INPUT_POST, 'color', FILTER_SANITIZE_STRING);
+        $size = filter_input(INPUT_POST, 'size', FILTER_SANITIZE_STRING);
+        
+        if ($name && $price && $stock !== false && $category) {
+            try {
+                // Insert product
+                $stmt = $mysqli->prepare("INSERT INTO products (name, price, stock, category, description, color, size) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param('sdissss', $name, $price, $stock, $category, $description, $color, $size);
+                $stmt->execute();
+                $productId = $mysqli->insert_id;
+                $stmt->close();
                 
-                $stmt = $conn->prepare("INSERT INTO products (name, price, stock, category, description, color, size) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sdissss", $name, $price, $stock, $category, $description, $color, $size);
-                
-                if ($stmt->execute()) {
-                    $productId = $conn->insert_id;
-                    if (isset($_FILES['image'])) {
-                        handleImageUpload($productId);
+                // Handle image upload
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $imageResult = handleImageUpload('image', $productId);
+                    if ($imageResult['success']) {
+                        $updateStmt = $mysqli->prepare("UPDATE products SET image_url = ? WHERE id = ?");
+                        $updateStmt->bind_param('si', $imageResult['path'], $productId);
+                        $updateStmt->execute();
+                        $updateStmt->close();
                     }
-                    $success_message = "Article ajouté avec succès!";
-                } else {
-                    $error_message = "Erreur lors de l'ajout de l'article.";
                 }
-                break;
-
-            case 'edit':
-                $id = $_POST['id'] ?? 0;
-                $name = $_POST['name'] ?? '';
-                $price = $_POST['price'] ?? 0;
-                $stock = $_POST['stock'] ?? 0;
-                $category = $_POST['category'] ?? '';
-                $description = $_POST['description'] ?? '';
-                $color = $_POST['color'] ?? '';
-                $size = $_POST['size'] ?? '';
                 
-                $stmt = $conn->prepare("UPDATE products SET name=?, price=?, stock=?, category=?, description=?, color=?, size=? WHERE id=?");
-                $stmt->bind_param("sdissssi", $name, $price, $stock, $category, $description, $color, $size, $id);
+                header('Location: ' . $_SERVER['PHP_SELF']);
+                exit();
+            } catch (Exception $e) {
+                $error = "Error adding product: " . $e->getMessage();
+            }
+        } else {
+            $error = "Please fill in all required fields.";
+        }
+    }
+    
+    if ($action === 'delete') {
+        $productId = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
+        
+        if ($productId) {
+            try {
+                $stmt = $mysqli->prepare("DELETE FROM products WHERE id = ?");
+                $stmt->bind_param('i', $productId);
+                $stmt->execute();
+                $stmt->close();
                 
-                if ($stmt->execute()) {
-                    if (isset($_FILES['image'])) {
-                        handleImageUpload($id);
-                    }
-                    $success_message = "Article modifié avec succès!";
-                } else {
-                    $error_message = "Erreur lors de la modification de l'article.";
-                }
-                break;
-
-            case 'delete':
-                $id = $_POST['id'] ?? 0;
-                $stmt = $conn->prepare("DELETE FROM products WHERE id=?");
-                $stmt->bind_param("i", $id);
-                
-                if ($stmt->execute()) {
-                    $success_message = "Article supprimé avec succès!";
-                } else {
-                    $error_message = "Erreur lors de la suppression de l'article.";
-                }
-                break;
+                header('Location: ' . $_SERVER['PHP_SELF']);
+                exit();
+            } catch (Exception $e) {
+                $error = "Error deleting product: " . $e->getMessage();
+            }
         }
     }
 }
 
-// Fetch all products
-$result = $conn->query("SELECT * FROM products ORDER BY created_at DESC");
-$products = $result->fetch_all(MYSQLI_ASSOC);
+// Function to get products with pagination
+function getProducts($page = 1, $perPage = 10) {
+    global $mysqli;
+    
+    $offset = ($page - 1) * $perPage;
+    
+    // Get total count
+    $result = $mysqli->query('SELECT COUNT(*) as count FROM products');
+    $total = $result->fetch_assoc()['count'];
+    
+    // Get products
+    $stmt = $mysqli->prepare('SELECT * FROM products ORDER BY created_at DESC LIMIT ? OFFSET ?');
+    $stmt->bind_param('ii', $perPage, $offset);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $products = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    
+    return [
+        'products' => $products,
+        'total' => $total,
+        'pages' => ceil($total / $perPage)
+    ];
+}
+
+$currentPage = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
+$result = getProducts($currentPage, 10);
 ?>
 
-<div id="articles-section" class="admin-section">
-    <h2 class="section-title">Gestion des Articles</h2>
-    
-    <?php if (isset($success_message)): ?>
-        <div class="alert alert-success"><?php echo $success_message; ?></div>
-    <?php endif; ?>
-    
-    <?php if (isset($error_message)): ?>
-        <div class="alert alert-error"><?php echo $error_message; ?></div>
-    <?php endif; ?>
-
-    <form method="post" action="?section=articles" enctype="multipart/form-data" class="article-form">
-        <input type="hidden" name="action" value="add">
-        <input type="hidden" name="id" value="" id="edit-id">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Articles - Admin Panel</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Manage Articles</h1>
         
-        <div class="form-group">
-            <label for="name">Nom de l'article</label>
-            <input type="text" id="name" name="name" required>
+        <?php displayMessage($success_message, 'success'); ?>
+        <?php displayMessage($error_message, 'error'); ?>
+        
+        <!-- Add Product Form -->
+        <div class="form-section">
+            <h2>Add New Product</h2>
+            <form method="POST" enctype="multipart/form-data" class="admin-form">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                <input type="hidden" name="action" value="add">
+                
+                <div class="form-group">
+                    <label for="name">Product Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="price">Price *</label>
+                    <input type="number" id="price" name="price" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="stock">Stock *</label>
+                    <input type="number" id="stock" name="stock" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="suits">Suits</option>
+                        <option value="shirts">Shirts</option>
+                        <option value="accessories">Accessories</option>
+                        <option value="shoes">Shoes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="color">Color</label>
+                    <input type="text" id="color" name="color">
+                </div>
+                
+                <div class="form-group">
+                    <label for="size">Size</label>
+                    <input type="text" id="size" name="size">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image">Product Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Add Product</button>
+            </form>
         </div>
         
-        <div class="form-group">
-            <label for="price">Prix</label>
-            <input type="number" id="price" name="price" step="0.01" required>
+        <!-- Products List -->
+        <div class="products-section">
+            <h2>Products List</h2>
+            
+            <?php if (empty($result['products'])): ?>
+                <p>No products found.</p>
+            <?php else: ?>
+                <div class="products-grid">
+                    <?php foreach ($result['products'] as $product): ?>
+                        <div class="product-card">
+                            <?php if (!empty($product['image_url'])): ?>
+                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                            <?php endif; ?>
+                            
+                            <div class="product-info">
+                                <h3><?php echo htmlspecialchars($product['name']); ?></h3>
+                                <p class="price">$<?php echo number_format($product['price'], 2); ?></p>
+                                <p class="stock">Stock: <?php echo $product['stock']; ?></p>
+                                <p class="category"><?php echo htmlspecialchars($product['category']); ?></p>
+                                
+                                <div class="product-actions">
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <!-- Pagination -->
+                <?php if ($result['pages'] > 1): ?>
+                    <div class="pagination">
+                        <?php for ($i = 1; $i <= $result['pages']; $i++): ?>
+                            <?php $activeClass = ($i === $currentPage) ? 'active' : ''; ?>
+                            <a href="?page=<?php echo $i; ?>" class="page-link <?php echo $activeClass; ?>"><?php echo $i; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
-        
-        <div class="form-group">
-            <label for="stock">Stock</label>
-            <input type="number" id="stock" name="stock" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="category">Catégorie</label>
-            <select id="category" name="category" required>
-                <option value="suits">Costumes</option>
-                <option value="shirts">Chemises</option>
-                <option value="pants">Pantalons</option>
-                <option value="accessories">Accessoires</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="color">Couleur</label>
-            <input type="text" id="color" name="color">
-        </div>
-        
-        <div class="form-group">
-            <label for="size">Taille</label>
-            <input type="text" id="size" name="size">
-        </div>
-        
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description" required></textarea>
-        </div>
-        
-        <div class="form-group">
-            <label for="image">Image</label>
-            <input type="file" id="image" name="image" accept="image/*">
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
-        <button type="reset" class="btn btn-secondary">Réinitialiser</button>
-    </form>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Image</th>
-                <th>Nom</th>
-                <th>Prix</th>
-                <th>Stock</th>
-                <th>Catégorie</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($products as $product): ?>
-            <tr>
-                <td>
-                    <?php if ($product['image_url']): ?>
-                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" class="image-preview" alt="<?php echo htmlspecialchars($product['name']); ?>">
-                    <?php else: ?>
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 50 50'%3E%3Crect width='50' height='50' fill='%23D4AE6A'/%3E%3Ctext x='25' y='30' text-anchor='middle' fill='%23fff' font-size='12'%3EPhoto%3C/text%3E%3C/svg%3E" class="image-preview">
-                    <?php endif; ?>
-                </td>
-                <td><?php echo htmlspecialchars($product['name']); ?></td>
-                <td><?php echo number_format($product['price'], 2); ?> DA</td>
-                <td><?php echo $product['stock']; ?></td>
-                <td><?php echo htmlspecialchars($product['category']); ?></td>
-                <td>
-                    <form method="post" action="?section=articles" style="display: inline;">
-                        <input type="hidden" name="action" value="edit">
-                        <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
-                        <button type="button" class="btn btn-info" onclick="editProduct(<?php echo htmlspecialchars(json_encode($product)); ?>)">Modifier</button>
-                    </form>
-                    <form method="post" action="?section=articles" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet article ?');">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="id" value="<?php echo $product['id']; ?>">
-                        <button type="submit" class="btn btn-danger">Supprimer</button>
-                    </form>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
-
-<script>
-function editProduct(product) {
-    document.querySelector('input[name="action"]').value = 'edit';
-    document.querySelector('#edit-id').value = product.id;
-    document.querySelector('#name').value = product.name;
-    document.querySelector('#price').value = product.price;
-    document.querySelector('#stock').value = product.stock;
-    document.querySelector('#category').value = product.category;
-    document.querySelector('#color').value = product.color || '';
-    document.querySelector('#size').value = product.size || '';
-    document.querySelector('#description').value = product.description || '';
-    
-    document.querySelector('.article-form').scrollIntoView({ behavior: 'smooth' });
-}
-</script>
+    </div>
+</body>
+</html>

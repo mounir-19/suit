@@ -1,0 +1,28 @@
+[2025-06-21 21:24:37] [error] SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ''10' OFFSET '0'' at line 1 {"action":"get_articles"}
+[2025-06-21 22:30:55] [error] CSRF token validation failed 
+[2025-06-21 22:32:06] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:32:10] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:32:14] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:32:15] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:32:24] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:32:29] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:12] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:16] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:23] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:28] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:31] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:33] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:41] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:45] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:35:47] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:36:07] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:36:50] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:36:51] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:40:02] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:40:30] [error] Error fetching admin data {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'"}
+[2025-06-21 22:41:52] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
+[2025-06-21 22:42:31] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
+[2025-06-21 22:42:58] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
+[2025-06-21 22:43:08] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
+[2025-06-21 22:44:45] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
+[2025-06-21 22:44:52] [error] Error fetching user data or stats {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'order_date' in 'where clause'","user_id":1}
